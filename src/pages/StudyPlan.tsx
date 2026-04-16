@@ -6,21 +6,73 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Brain, Calendar, Clock, Sparkles, CheckCircle2 } from 'lucide-react';
+import { Brain, Calendar, Clock, Sparkles, CheckCircle2, Lightbulb } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
-const mockPlan = [
-  { day: 'Monday', tasks: [{ subject: 'Physics', topic: 'Thermodynamics', duration: '1.5 hrs' }, { subject: 'Math', topic: 'Calculus', duration: '1 hr' }] },
-  { day: 'Tuesday', tasks: [{ subject: 'Chemistry', topic: 'Organic', duration: '1.5 hrs' }, { subject: 'English', topic: 'Essay Writing', duration: '45 min' }] },
-  { day: 'Wednesday', tasks: [{ subject: 'Biology', topic: 'Genetics', duration: '1 hr' }, { subject: 'Physics', topic: 'Waves', duration: '1 hr' }] },
-];
+interface StudyTask {
+  subject: string;
+  topic: string;
+  duration: string;
+}
+
+interface DayPlan {
+  day: string;
+  tasks: StudyTask[];
+}
+
+interface PlanData {
+  plan: DayPlan[];
+  tips?: string[];
+}
 
 export default function StudyPlan() {
   const [generated, setGenerated] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [planData, setPlanData] = useState<PlanData | null>(null);
+  const [examDate, setExamDate] = useState('');
+  const [subjects, setSubjects] = useState('');
+  const [difficulty, setDifficulty] = useState('medium');
+  const [dailyHours, setDailyHours] = useState('4');
+  const { user } = useAuth();
+  const { toast } = useToast();
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
+    if (!subjects.trim()) {
+      toast({ title: 'Please enter subjects', variant: 'destructive' });
+      return;
+    }
     setGenerating(true);
-    setTimeout(() => { setGenerating(false); setGenerated(true); }, 1500);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-study-plan', {
+        body: { examDate, subjects, difficulty, dailyHours: parseInt(dailyHours) || 4 },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      setPlanData(data);
+      setGenerated(true);
+
+      // Save to database
+      if (user) {
+        await supabase.from('study_plans').insert({
+          user_id: user.id,
+          exam_date: examDate || null,
+          subjects: subjects.split(',').map(s => s.trim()),
+          difficulty,
+          daily_hours: parseInt(dailyHours) || 4,
+          generated_plan: data,
+        });
+      }
+
+      toast({ title: 'Study plan generated!', description: 'Your AI-powered schedule is ready.' });
+    } catch (err: any) {
+      console.error(err);
+      toast({ title: 'Generation failed', description: err.message, variant: 'destructive' });
+    } finally {
+      setGenerating(false);
+    }
   };
 
   return (
@@ -39,15 +91,15 @@ export default function StudyPlan() {
             <div className="space-y-4">
               <div>
                 <Label className="text-foreground text-sm">Exam Date</Label>
-                <Input type="date" className="mt-1 bg-muted/50 border-border/50 text-foreground" />
+                <Input type="date" value={examDate} onChange={e => setExamDate(e.target.value)} className="mt-1 bg-muted/50 border-border/50 text-foreground" />
               </div>
               <div>
                 <Label className="text-foreground text-sm">Subjects (comma separated)</Label>
-                <Input placeholder="Physics, Math, Chemistry" className="mt-1 bg-muted/50 border-border/50 text-foreground" />
+                <Input value={subjects} onChange={e => setSubjects(e.target.value)} placeholder="Physics, Math, Chemistry" className="mt-1 bg-muted/50 border-border/50 text-foreground" />
               </div>
               <div>
                 <Label className="text-foreground text-sm">Difficulty Level</Label>
-                <Select>
+                <Select value={difficulty} onValueChange={setDifficulty}>
                   <SelectTrigger className="mt-1 bg-muted/50 border-border/50 text-foreground">
                     <SelectValue placeholder="Select difficulty" />
                   </SelectTrigger>
@@ -60,7 +112,7 @@ export default function StudyPlan() {
               </div>
               <div>
                 <Label className="text-foreground text-sm">Daily Study Hours</Label>
-                <Input type="number" placeholder="4" min={1} max={12} className="mt-1 bg-muted/50 border-border/50 text-foreground" />
+                <Input type="number" value={dailyHours} onChange={e => setDailyHours(e.target.value)} placeholder="4" min={1} max={12} className="mt-1 bg-muted/50 border-border/50 text-foreground" />
               </div>
               <Button
                 onClick={handleGenerate}
@@ -83,14 +135,14 @@ export default function StudyPlan() {
           transition={{ delay: 0.2 }}
           className="lg:col-span-2"
         >
-          {generated ? (
+          {generated && planData ? (
             <div className="space-y-4">
-              {mockPlan.map((day, i) => (
+              {planData.plan.map((day, i) => (
                 <motion.div
                   key={day.day}
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.15 }}
+                  transition={{ delay: i * 0.1 }}
                 >
                   <GlassCard hover={false}>
                     <h3 className="font-heading font-semibold text-foreground mb-3 flex items-center gap-2">
@@ -113,6 +165,22 @@ export default function StudyPlan() {
                   </GlassCard>
                 </motion.div>
               ))}
+              {planData.tips && planData.tips.length > 0 && (
+                <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.8 }}>
+                  <GlassCard hover={false}>
+                    <h3 className="font-heading font-semibold text-foreground mb-3 flex items-center gap-2">
+                      <Lightbulb className="w-4 h-4 text-yellow-400" /> Study Tips
+                    </h3>
+                    <ul className="space-y-2">
+                      {planData.tips.map((tip, i) => (
+                        <li key={i} className="text-sm text-muted-foreground flex items-start gap-2">
+                          <span className="text-primary mt-0.5">•</span> {tip}
+                        </li>
+                      ))}
+                    </ul>
+                  </GlassCard>
+                </motion.div>
+              )}
             </div>
           ) : (
             <GlassCard hover={false} className="flex items-center justify-center h-full min-h-[300px]">
