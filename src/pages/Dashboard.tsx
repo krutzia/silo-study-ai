@@ -32,10 +32,32 @@ export default function Dashboard() {
   const [streak, setStreak] = useState(0);
   const [todayHours, setTodayHours] = useState(0);
   const [weeklyData, setWeeklyData] = useState<{ day: string; hours: number }[]>([]);
+  const [overdueCount, setOverdueCount] = useState(0);
+  const [adjusting, setAdjusting] = useState(false);
 
   useEffect(() => {
     if (!user) return;
     loadData();
+
+    // Realtime: refresh dashboard when our sessions or tasks change
+    const channel = supabase
+      .channel('dashboard-' + user.id)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'study_sessions', filter: `user_id=eq.${user.id}` },
+        () => loadData()
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'study_tasks', filter: `user_id=eq.${user.id}` },
+        () => loadData()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   const loadData = async () => {
