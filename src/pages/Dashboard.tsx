@@ -9,9 +9,10 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
-  Flame, Clock, Target, TrendingUp, Sparkles
+  Flame, Clock, Target, TrendingUp, Sparkles, Wand2, AlertTriangle, Loader2
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface Task {
   id: string;
