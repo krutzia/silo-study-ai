@@ -65,7 +65,7 @@ export default function Dashboard() {
     const today = new Date().toISOString().split('T')[0];
 
     // Load in parallel
-    const [tasksRes, streakRes, todaySessionsRes, weekSessionsRes] = await Promise.all([
+    const [tasksRes, streakRes, todaySessionsRes, weekSessionsRes, overdueRes] = await Promise.all([
       supabase
         .from('study_tasks')
         .select('id, subject, topic, duration_minutes, completed')
@@ -82,21 +82,26 @@ export default function Dashboard() {
         .select('duration_minutes')
         .eq('user_id', user.id)
         .gte('started_at', `${today}T00:00:00`),
-      // Get sessions for the past 7 days
       supabase
         .from('study_sessions')
         .select('duration_minutes, started_at')
         .eq('user_id', user.id)
         .gte('started_at', new Date(Date.now() - 7 * 86400000).toISOString()),
+      supabase
+        .from('study_tasks')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('completed', false)
+        .lt('scheduled_date', today),
     ]);
 
     if (tasksRes.data) setTasks(tasksRes.data);
     if (streakRes.data) setStreak(streakRes.data.current_streak);
+    setOverdueCount(overdueRes.count || 0);
 
     const todayMins = (todaySessionsRes.data || []).reduce((a, b) => a + b.duration_minutes, 0);
-    setTodayHours(Math.round(todayMins / 6) / 10); // 1 decimal
+    setTodayHours(Math.round(todayMins / 6) / 10);
 
-    // Build weekly chart
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const weekMap: Record<string, number> = {};
     for (let i = 6; i >= 0; i--) {
@@ -114,6 +119,25 @@ export default function Dashboard() {
     })));
 
     setLoading(false);
+  };
+
+  const handleAdjustPlan = async () => {
+    setAdjusting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('adjust-study-plan');
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success(
+        data.rescheduled > 0
+          ? `Rescheduled ${data.rescheduled} of ${data.total_overdue} overdue tasks`
+          : data.message || 'Plan reviewed'
+      );
+      loadData();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to adjust plan');
+    } finally {
+      setAdjusting(false);
+    }
   };
 
   const toggleTask = async (id: string) => {
