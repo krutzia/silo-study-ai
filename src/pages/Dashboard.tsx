@@ -184,6 +184,37 @@ export default function Dashboard() {
         <p className="text-muted-foreground mt-1">Here's your study progress for today.</p>
       </motion.div>
 
+      {overdueCount > 0 && (
+        <motion.div {...fadeUp} className="mb-6">
+          <GlassCard hover={false} className="border-orange-500/30 bg-orange-500/5">
+            <div className="flex items-center gap-4 flex-wrap">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center flex-shrink-0">
+                <AlertTriangle className="w-5 h-5 text-primary-foreground" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-heading font-semibold text-foreground">
+                  You have {overdueCount} overdue {overdueCount === 1 ? 'task' : 'tasks'}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Let AI redistribute them across your upcoming days.
+                </p>
+              </div>
+              <Button
+                onClick={handleAdjustPlan}
+                disabled={adjusting}
+                className="gradient-primary text-primary-foreground hover:opacity-90"
+              >
+                {adjusting ? (
+                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Adjusting...</>
+                ) : (
+                  <><Wand2 className="w-4 h-4 mr-2" /> Auto-adjust Plan</>
+                )}
+              </Button>
+            </div>
+          </GlassCard>
+        </motion.div>
+      )}
+
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
         {[
           { icon: Flame, label: 'Study Streak', value: `${streak} days`, color: 'from-orange-500 to-red-500' },
