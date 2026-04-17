@@ -71,7 +71,28 @@ export default function FriendsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user) loadAll();
+    if (!user) return;
+    loadAll();
+
+    // Realtime: when a friend records a study session or any friendship changes, refresh
+    const channel = supabase
+      .channel('friends-feed-' + user.id)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'study_sessions' },
+        () => loadActivity()
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'friendships' },
+        () => loadAll()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   const loadAll = async () => {

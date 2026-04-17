@@ -9,9 +9,10 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
-  Flame, Clock, Target, TrendingUp, Sparkles
+  Flame, Clock, Target, TrendingUp, Sparkles, Wand2, AlertTriangle, Loader2
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface Task {
   id: string;
@@ -31,10 +32,32 @@ export default function Dashboard() {
   const [streak, setStreak] = useState(0);
   const [todayHours, setTodayHours] = useState(0);
   const [weeklyData, setWeeklyData] = useState<{ day: string; hours: number }[]>([]);
+  const [overdueCount, setOverdueCount] = useState(0);
+  const [adjusting, setAdjusting] = useState(false);
 
   useEffect(() => {
     if (!user) return;
     loadData();
+
+    // Realtime: refresh dashboard when our sessions or tasks change
+    const channel = supabase
+      .channel('dashboard-' + user.id)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'study_sessions', filter: `user_id=eq.${user.id}` },
+        () => loadData()
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'study_tasks', filter: `user_id=eq.${user.id}` },
+        () => loadData()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   const loadData = async () => {
@@ -42,7 +65,7 @@ export default function Dashboard() {
     const today = new Date().toISOString().split('T')[0];
 
     // Load in parallel
-    const [tasksRes, streakRes, todaySessionsRes, weekSessionsRes] = await Promise.all([
+    const [tasksRes, streakRes, todaySessionsRes, weekSessionsRes, overdueRes] = await Promise.all([
       supabase
         .from('study_tasks')
         .select('id, subject, topic, duration_minutes, completed')
@@ -59,21 +82,26 @@ export default function Dashboard() {
         .select('duration_minutes')
         .eq('user_id', user.id)
         .gte('started_at', `${today}T00:00:00`),
-      // Get sessions for the past 7 days
       supabase
         .from('study_sessions')
         .select('duration_minutes, started_at')
         .eq('user_id', user.id)
         .gte('started_at', new Date(Date.now() - 7 * 86400000).toISOString()),
+      supabase
+        .from('study_tasks')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('completed', false)
+        .lt('scheduled_date', today),
     ]);
 
     if (tasksRes.data) setTasks(tasksRes.data);
     if (streakRes.data) setStreak(streakRes.data.current_streak);
+    setOverdueCount(overdueRes.count || 0);
 
     const todayMins = (todaySessionsRes.data || []).reduce((a, b) => a + b.duration_minutes, 0);
-    setTodayHours(Math.round(todayMins / 6) / 10); // 1 decimal
+    setTodayHours(Math.round(todayMins / 6) / 10);
 
-    // Build weekly chart
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const weekMap: Record<string, number> = {};
     for (let i = 6; i >= 0; i--) {
@@ -91,6 +119,25 @@ export default function Dashboard() {
     })));
 
     setLoading(false);
+  };
+
+  const handleAdjustPlan = async () => {
+    setAdjusting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('adjust-study-plan');
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success(
+        data.rescheduled > 0
+          ? `Rescheduled ${data.rescheduled} of ${data.total_overdue} overdue tasks`
+          : data.message || 'Plan reviewed'
+      );
+      loadData();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to adjust plan');
+    } finally {
+      setAdjusting(false);
+    }
   };
 
   const toggleTask = async (id: string) => {
@@ -136,6 +183,37 @@ export default function Dashboard() {
         </h1>
         <p className="text-muted-foreground mt-1">Here's your study progress for today.</p>
       </motion.div>
+
+      {overdueCount > 0 && (
+        <motion.div {...fadeUp} className="mb-6">
+          <GlassCard hover={false} className="border-orange-500/30 bg-orange-500/5">
+            <div className="flex items-center gap-4 flex-wrap">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center flex-shrink-0">
+                <AlertTriangle className="w-5 h-5 text-primary-foreground" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-heading font-semibold text-foreground">
+                  You have {overdueCount} overdue {overdueCount === 1 ? 'task' : 'tasks'}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Let AI redistribute them across your upcoming days.
+                </p>
+              </div>
+              <Button
+                onClick={handleAdjustPlan}
+                disabled={adjusting}
+                className="gradient-primary text-primary-foreground hover:opacity-90"
+              >
+                {adjusting ? (
+                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Adjusting...</>
+                ) : (
+                  <><Wand2 className="w-4 h-4 mr-2" /> Auto-adjust Plan</>
+                )}
+              </Button>
+            </div>
+          </GlassCard>
+        </motion.div>
+      )}
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
         {[
