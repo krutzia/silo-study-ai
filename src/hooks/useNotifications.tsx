@@ -10,14 +10,31 @@ import { createElement } from 'react';
  * - Toasts on incoming friend requests (Realtime)
  * - Toasts when a friend's streak surpasses the user's
  * - Toasts when overdue tasks are detected
- *
- * Mount once near the app root (inside AuthProvider).
+ * - Also persists each notification to the `notifications` table for history.
  */
 export function useNotifications() {
   const { user } = useAuth();
   const lastStreakCheck = useRef<number>(0);
   const lastOverdueCheck = useRef<number>(0);
   const notifiedFriendStreaks = useRef<Set<string>>(new Set());
+
+  const persist = async (n: {
+    type: string;
+    title: string;
+    message?: string;
+    link?: string;
+    metadata?: Record<string, unknown>;
+  }) => {
+    if (!user) return;
+    await supabase.from('notifications').insert({
+      user_id: user.id,
+      type: n.type,
+      title: n.title,
+      message: n.message ?? null,
+      link: n.link ?? null,
+      metadata: n.metadata ?? null,
+    });
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -41,9 +58,17 @@ export function useNotifications() {
             .eq('user_id', requesterId)
             .maybeSingle();
           const name = profile?.display_name || 'Someone';
-          toast(`${name} sent you a friend request`, {
+          const title = `${name} sent you a friend request`;
+          toast(title, {
             description: 'Open the Friends page to respond.',
             icon: createElement(UserPlus, { className: 'w-4 h-4' }),
+          });
+          await persist({
+            type: 'friend_request',
+            title,
+            message: 'Open the Friends page to respond.',
+            link: '/friends',
+            metadata: { requester_id: requesterId },
           });
         }
       )
@@ -53,7 +78,6 @@ export function useNotifications() {
     const checkStreaksAndOverdue = async () => {
       const now = Date.now();
 
-      // --- Overdue tasks (every 5 min) ---
       if (now - lastOverdueCheck.current > 5 * 60 * 1000) {
         lastOverdueCheck.current = now;
         const today = new Date().toISOString().split('T')[0];
@@ -67,15 +91,22 @@ export function useNotifications() {
           const key = `overdue-toast-${today}`;
           if (!sessionStorage.getItem(key)) {
             sessionStorage.setItem(key, '1');
-            toast.warning(`You have ${overdue.length} overdue task${overdue.length > 1 ? 's' : ''}`, {
+            const title = `You have ${overdue.length} overdue task${overdue.length > 1 ? 's' : ''}`;
+            toast.warning(title, {
               description: 'Visit the Dashboard to auto-adjust your plan.',
               icon: createElement(AlertTriangle, { className: 'w-4 h-4' }),
+            });
+            await persist({
+              type: 'overdue_tasks',
+              title,
+              message: 'Visit the Dashboard to auto-adjust your plan.',
+              link: '/dashboard',
+              metadata: { count: overdue.length },
             });
           }
         }
       }
 
-      // --- Friend streak comparison (every 10 min) ---
       if (now - lastStreakCheck.current > 10 * 60 * 1000) {
         lastStreakCheck.current = now;
 
@@ -114,9 +145,18 @@ export function useNotifications() {
             .eq('user_id', fs.user_id)
             .maybeSingle();
           const name = profile?.display_name || 'A friend';
-          toast(`🔥 ${name} just beat your streak!`, {
-            description: `They're at ${fs.current_streak} days. Time to catch up!`,
+          const title = `🔥 ${name} just beat your streak!`;
+          const message = `They're at ${fs.current_streak} days. Time to catch up!`;
+          toast(title, {
+            description: message,
             icon: createElement(Flame, { className: 'w-4 h-4' }),
+          });
+          await persist({
+            type: 'streak_beat',
+            title,
+            message,
+            link: '/leaderboard',
+            metadata: { friend_id: fs.user_id, streak: fs.current_streak },
           });
         }
       }

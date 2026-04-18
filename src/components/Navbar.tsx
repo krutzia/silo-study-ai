@@ -3,10 +3,12 @@ import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Button } from '@/components/ui/button';
-import { Moon, Sun, Bell, LogOut, Zap } from 'lucide-react';
+import { Moon, Sun, Zap } from 'lucide-react';
+import { NotificationsBell } from './NotificationsBell';
+import { UserMenu } from './UserMenu';
 
 export function Navbar() {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
@@ -25,7 +27,7 @@ export function Navbar() {
             <span className="text-xl font-heading font-bold text-foreground">Silo</span>
           </Link>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <Button
               variant="ghost"
               size="icon"
@@ -37,23 +39,8 @@ export function Navbar() {
 
             {user ? (
               <>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-muted-foreground hover:text-foreground relative"
-                  onClick={() => navigate('/dashboard')}
-                >
-                  <Bell className="w-5 h-5" />
-                  <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full gradient-primary" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => { signOut(); navigate('/'); }}
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  <LogOut className="w-5 h-5" />
-                </Button>
+                <NotificationsBell />
+                <UserMenu />
               </>
             ) : (
               <>
