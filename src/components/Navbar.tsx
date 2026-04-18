@@ -29,7 +29,9 @@ export function Navbar() {
     return () => window.removeEventListener('scroll', onScroll);
   }, [isLanding]);
 
-  const showStickyCta = isLanding && scrolled && !user;
+  const showStickyCta = isLanding && scrolled;
+  const ctaTarget = user ? '/dashboard' : '/auth';
+  const ctaLabel = user ? 'Go to dashboard' : 'Start learning';
 
   return (
     <motion.nav
@@ -56,10 +58,10 @@ export function Navbar() {
                   transition={{ duration: 0.2 }}
                 >
                   <Button
-                    onClick={() => navigate('/auth')}
+                    onClick={() => navigate(ctaTarget)}
                     className="gradient-primary text-primary-foreground hover:opacity-90 shadow-glow"
                   >
-                    Start learning
+                    {ctaLabel}
                     <ArrowRight className="w-4 h-4 ml-1.5" />
                   </Button>
                 </motion.div>
