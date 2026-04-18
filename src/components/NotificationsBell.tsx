@@ -135,9 +135,9 @@ export function NotificationsBell() {
                         className={cn(
                           'w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5',
                           n.type === 'streak_beat'
-                            ? 'bg-orange-500/15 text-orange-500'
+                            ? 'bg-accent/15 text-accent'
                             : n.type === 'overdue_tasks'
-                            ? 'bg-yellow-500/15 text-yellow-500'
+                            ? 'bg-destructive/15 text-destructive'
                             : 'bg-primary/15 text-primary'
                         )}
                       >

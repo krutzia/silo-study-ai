@@ -26,14 +26,14 @@ export function useNotifications() {
     metadata?: Record<string, unknown>;
   }) => {
     if (!user) return;
-    await supabase.from('notifications').insert({
+    await supabase.from('notifications').insert([{
       user_id: user.id,
       type: n.type,
       title: n.title,
       message: n.message ?? null,
       link: n.link ?? null,
-      metadata: n.metadata ?? null,
-    });
+      metadata: (n.metadata ?? null) as never,
+    }]);
   };
 
   useEffect(() => {
