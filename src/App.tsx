@@ -17,6 +17,7 @@ import GoalsPage from "./pages/Goals";
 import SettingsPage from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import { AIChatWidget } from "./components/AIChatWidget";
+import { NotificationsProvider } from "./hooks/useNotifications";
 
 const queryClient = new QueryClient();
 
@@ -49,6 +50,7 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
             <AIChatWidget />
+            <NotificationsProvider />
           </BrowserRouter>
         </TooltipProvider>
       </AuthProvider>
