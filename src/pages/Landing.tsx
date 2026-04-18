@@ -73,7 +73,7 @@ export default function Landing() {
                 onClick={() => navigate('/auth')}
                 className="gradient-primary text-primary-foreground text-lg px-8 py-6 rounded-xl hover:opacity-90 shadow-glow"
               >
-                Start for free
+                Start learning
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Button>
             </div>
