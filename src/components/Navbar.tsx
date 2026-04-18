@@ -1,9 +1,10 @@
-import { Link, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { useEffect, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Button } from '@/components/ui/button';
-import { Moon, Sun, Zap } from 'lucide-react';
+import { Moon, Sun, Zap, ArrowRight } from 'lucide-react';
 import { NotificationsBell } from './NotificationsBell';
 import { UserMenu } from './UserMenu';
 
@@ -11,6 +12,24 @@ export function Navbar() {
   const { user } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [scrolled, setScrolled] = useState(false);
+
+  // Show the sticky CTA only on the landing page after scrolling past the hero.
+  const isLanding = location.pathname === '/';
+
+  useEffect(() => {
+    if (!isLanding) {
+      setScrolled(false);
+      return;
+    }
+    const onScroll = () => setScrolled(window.scrollY > 400);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [isLanding]);
+
+  const showStickyCta = isLanding && scrolled && !user;
 
   return (
     <motion.nav
@@ -28,6 +47,25 @@ export function Navbar() {
           </Link>
 
           <div className="flex items-center gap-2">
+            <AnimatePresence>
+              {showStickyCta && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <Button
+                    onClick={() => navigate('/auth')}
+                    className="gradient-primary text-primary-foreground hover:opacity-90 shadow-glow"
+                  >
+                    Start learning
+                    <ArrowRight className="w-4 h-4 ml-1.5" />
+                  </Button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             <Button
               variant="ghost"
               size="icon"
@@ -47,9 +85,11 @@ export function Navbar() {
                 <Button variant="ghost" onClick={() => navigate('/auth')} className="text-muted-foreground hover:text-foreground">
                   Login
                 </Button>
-                <Button onClick={() => navigate('/auth')} className="gradient-primary text-primary-foreground hover:opacity-90">
-                  Get Started
-                </Button>
+                {!showStickyCta && (
+                  <Button onClick={() => navigate('/auth')} className="gradient-primary text-primary-foreground hover:opacity-90">
+                    Get Started
+                  </Button>
+                )}
               </>
             )}
           </div>
