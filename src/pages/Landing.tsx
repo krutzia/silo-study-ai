@@ -76,13 +76,6 @@ export default function Landing() {
                 Start for free
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                className="text-lg px-8 py-6 rounded-xl border-border/50 text-foreground hover:bg-muted/50"
-              >
-                Watch demo
-              </Button>
             </div>
           </motion.div>
         </div>
