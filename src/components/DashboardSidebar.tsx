@@ -2,7 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   LayoutDashboard, Calendar, Users, Trophy, BarChart3,
-  Timer, Target, Settings, ChevronLeft, ChevronRight, Zap
+  Timer, Target, Settings, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
