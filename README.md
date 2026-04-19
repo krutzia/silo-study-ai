@@ -6,7 +6,7 @@ The platform combines authentication, structured study spaces (silos), and intel
 
 --------------------------------------------------
 
-#Features
+# Features
 
 AI-Powered Study System
 - Organize study content into structured “Silos” (topics/subjects)
@@ -15,7 +15,7 @@ AI-Powered Study System
 
 ---  
 
-#Authentication
+# Authentication
 - Secure authentication using Supabase Auth
 - Google Sign-In integration (OAuth 2.0)
 - Email/password login support
@@ -23,7 +23,7 @@ AI-Powered Study System
 
 ---
 
-#User Experience
+# User Experience
 - Clean onboarding and authentication flow
 - Smooth redirects after login/signup
 - Responsive UI for desktop and mobile
@@ -31,7 +31,7 @@ AI-Powered Study System
 
 ---
 
-#Modern UI
+# Modern UI
 - Built with React + Vite + TypeScript
 - Styled using Tailwind CSS
 - Minimal, modern SaaS-style design
@@ -40,7 +40,7 @@ AI-Powered Study System
 --------------------------------------------------
 
 
-#Tech Stack
+# Tech Stack
 
 Frontend
 - React 18
@@ -57,7 +57,7 @@ Backend / Infrastructure
 
 --------------------------------------------------
 
-#Getting Started
+# Getting Started
 
 Prerequisites
 - Node.js (LTS recommended)
@@ -114,7 +114,7 @@ npm run build
 
 --------------------------------------------------
 
-Project Structure
+# Project Structure
 
 src/
   main.tsx
@@ -141,7 +141,7 @@ public/
 
 --------------------------------------------------
 
-#Highlights
+# Highlights
 
 - Secure authentication with Supabase
 - Google OAuth integration
@@ -151,13 +151,13 @@ public/
 
 --------------------------------------------------
 
-#Live Demo
+# Live Demo
 
 https://silo-study-ai.vercel.app
 
 --------------------------------------------------
 
-#Author
+# Author
 
 Kashish
 B.Tech Computer Science
@@ -165,7 +165,7 @@ JSS Academy of Technical Education, Noida
 
 --------------------------------------------------
 
-#Future Scope
+# Future Scope
 
 - AI Notes Generator
 - Smart Study Planner
