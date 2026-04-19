@@ -2,7 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   LayoutDashboard, Calendar, Users, Trophy, BarChart3,
-  Timer, Target, Settings, ChevronLeft, ChevronRight, Zap
+  Timer, Target, Settings, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
@@ -64,17 +64,6 @@ export function DashboardSidebar() {
           })}
         </nav>
 
-        {!collapsed && (
-          <div className="px-3 mt-auto">
-            <div className="glass rounded-lg p-4 text-center">
-              <div className="w-10 h-10 rounded-full gradient-warm mx-auto mb-2 flex items-center justify-center">
-                <Zap className="w-5 h-5 text-primary-foreground" />
-              </div>
-              <p className="text-xs text-muted-foreground">Upgrade to Pro</p>
-              <p className="text-xs text-muted-foreground">Unlock AI features</p>
-            </div>
-          </div>
-        )}
       </div>
     </motion.aside>
   );
