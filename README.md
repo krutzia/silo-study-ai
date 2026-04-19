@@ -157,10 +157,10 @@ https://silo-study-ai.vercel.app
 
 --------------------------------------------------
 
-# Author
+## Author
 
-Kashish
-B.Tech Computer Science
+Kashish  
+B.Tech Computer Science  
 JSS Academy of Technical Education, Noida
 
 --------------------------------------------------
